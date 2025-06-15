@@ -1,0 +1,13 @@
+# Exclude all files in these folders
+chunks/*
+metadata/*
+
+# Except the placeholder file
+!chunks/.gitkeep
+!metadata/.gitkeep
+
+# Other exclusions
+.env
+chunklog.db
+__pycache__/
+*.pyc
