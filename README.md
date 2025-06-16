@@ -1,6 +1,6 @@
-# ChunkMunk 🧩
+# ChunkMonk 🧩
 
-ChunkMunk is a powerful document processing pipeline that chunks documents, generates metadata, and stores embeddings in Pinecone vector database. It's designed to help you prepare your documents for RAG (Retrieval-Augmented Generation) applications.
+ChunkMonk is a powerful document processing pipeline that chunks documents, generates metadata, and stores embeddings in Pinecone vector database. It's designed to help you prepare your documents for RAG (Retrieval-Augmented Generation) applications.
 
 ## Features ✨
 
@@ -31,8 +31,8 @@ ChunkMunk is a powerful document processing pipeline that chunks documents, gene
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ChunkMunk.git
-cd ChunkMunk
+git clone https://github.com/Cthomasdesign/ChunkMonk.git
+cd ChunkMonk
 ```
 
 2. Create and activate a virtual environment:
@@ -111,7 +111,7 @@ The script will prompt you for:
 ## Project Structure 📁
 
 ```
-ChunkMunk/
+ChunkMonk/
 ├── documents/     # Input documents
 ├── chunks/        # Generated chunks
 ├── metadata/      # Generated metadata
@@ -120,21 +120,3 @@ ChunkMunk/
 ├── embed_upsert.py
 └── chunklog.db    # Processing log
 ```
-
-## Contributing 🤝
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License 📄
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments 🙏
-
-- OpenAI for the embedding and LLM capabilities
-- Pinecone for the vector database infrastructure
-- The open-source community for various dependencies
-
-## Support 💬
-
-If you encounter any issues or have questions, please open an issue in the GitHub repository. 
