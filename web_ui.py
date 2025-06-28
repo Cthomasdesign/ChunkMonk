@@ -31,8 +31,10 @@ index = pc.Index(host="upstate-gcjwpkh.svc.aped-4627-b74a.pinecone.io")
 
 @app.route('/')
 def index_route():
-    """Main page showing all chunks"""
+    """Main page showing all chunks, with optional source_file filter"""
+    filter_source = request.args.get('source')
     chunks = []
+    all_sources = set()
     
     # Get all chunk files
     chunk_files = sorted(Path(CHUNKS_DIR).glob("*.txt"))
@@ -50,6 +52,12 @@ def index_route():
         if metadata_file.exists():
             with open(metadata_file, 'r', encoding='utf-8') as f:
                 metadata = json.load(f)
+        source_file = metadata.get('source_file', 'Unknown')
+        all_sources.add(source_file)
+        
+        # Filter by source_file if filter is set
+        if filter_source and filter_source != 'all' and source_file != filter_source:
+            continue
         
         # Check if chunk is in Pinecone
         in_pinecone = is_chunk_in_pinecone(chunk_id)
@@ -59,13 +67,14 @@ def index_route():
             'content': content,
             'metadata': metadata,
             'char_count': len(content),
-            'source_file': metadata.get('source_file', 'Unknown'),
+            'source_file': source_file,
             'summary': metadata.get('summary', 'No summary available'),
             'tags': metadata.get('tags', []),
             'in_pinecone': in_pinecone
         })
     
-    return render_template('index.html', chunks=chunks)
+    all_sources = sorted(all_sources)
+    return render_template('index.html', chunks=chunks, all_sources=all_sources, filter_source=filter_source or 'all')
 
 @app.route('/chunk/<chunk_id>')
 def view_chunk(chunk_id):
