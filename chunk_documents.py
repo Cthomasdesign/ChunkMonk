@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 import re
 import argparse
 import json
@@ -8,8 +11,6 @@ from datetime import datetime
 import openai
 from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-from dotenv import load_dotenv
-load_dotenv()
 import os
 import pandas as pd
 from docx import Document as DocxDocument
@@ -19,6 +20,7 @@ nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
 
 import tiktoken
+import csv
 
 # === CONFIG ===
 CHUNKS_DIR = "chunks"
@@ -68,6 +70,18 @@ def sentence_chunk(text, max_sentences):
 def heading_chunk(text, heading_level="#"):
     return [s.strip() for s in re.split(rf"\n{re.escape(heading_level)}+", text) if s.strip()]
 
+def csv_row_chunk(file_path):
+    """Chunk a CSV file so each row is a pretty-printed .txt file with field names and values."""
+    base_name = Path(file_path).stem
+    with open(file_path, newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for i, row in enumerate(reader):
+            pretty_lines = [f"{field}: {row[field]}" for field in reader.fieldnames]
+            pretty_content = "\n".join(pretty_lines)
+            chunk_filename = f"{base_name}_chunk_{i:03}.txt"
+            with open(os.path.join(CHUNKS_DIR, chunk_filename), "w", encoding="utf-8") as f:
+                f.write(pretty_content)
+
 # === SAVE CHUNKS ===
 def save_chunks(chunks, source_filename):
     base_name = Path(source_filename).stem
@@ -91,16 +105,25 @@ def chunk_file(file_path, method, **kwargs):
         chunks = sentence_chunk(text, kwargs.get("max_sentences", 5))
     elif method == "heading":
         chunks = heading_chunk(text, kwargs.get("heading_level", "#"))
+    elif method == "csv-row":
+        csv_row_chunk(file_path)
+        return
     else:
         raise ValueError(f"Unknown chunking method: {method}")
 
     save_chunks(chunks, os.path.basename(file_path))
     print(f"✅ Chunked {file_path} into {len(chunks)} chunks")
 
+def has_been_chunked(file_path):
+    base_name = Path(file_path).stem
+    # Look for any chunk files that start with this base name
+    chunk_files = list(Path(CHUNKS_DIR).glob(f"{base_name}_chunk_*.txt"))
+    return len(chunk_files) > 0
+
 # === CLI ===
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Chunk documents for embedding.")
-    parser.add_argument("--method", type=str, choices=["llm", "fixed", "sentence", "heading"], help="Chunking method to use")
+    parser.add_argument("--method", type=str, choices=["llm", "fixed", "sentence", "heading", "csv-row"], help="Chunking method to use")
     parser.add_argument("--chunk_size", type=int, default=300, help="Token size for fixed chunking")
     parser.add_argument("--max_sentences", type=int, default=5, help="Max sentences per sentence-based chunk")
     parser.add_argument("--heading_level", type=str, default="#", help="Markdown heading level for heading splitting")
@@ -113,7 +136,7 @@ if __name__ == "__main__":
 
     if not args.method:
         print("Choose a chunking method:")
-        methods = ["llm", "fixed", "sentence", "heading"]
+        methods = ["llm", "fixed", "sentence", "heading", "csv-row"]
         for i, m in enumerate(methods):
             print(f"{i + 1}. {m}")
         choice = int(input("Enter number: "))
@@ -130,14 +153,22 @@ if __name__ == "__main__":
             print("Enter your custom prompt (use {text} where the document should be inserted):")
             args.llm_prompt = input("Prompt: ")
 
+    chunk_files = sorted(Path(CHUNKS_DIR).glob("*.txt"))
     for file in Path(args.input_folder).iterdir():
         if file.suffix.lower() in [".pdf", ".docx", ".txt", ".md", ".csv", ".json"]:
-            chunk_file(
-                str(file),
-                method=args.method,
-                chunk_size=args.chunk_size,
-                max_sentences=args.max_sentences,
-                heading_level=args.heading_level,
-                overlap=args.overlap,
-                llm_prompt=args.llm_prompt
-            )
+            if has_been_chunked(file):
+                print(f"⏭️ Skipping already chunked document: {file.name}")
+                continue
+            if file.suffix.lower() == ".csv" and args.method == "csv-row":
+                csv_row_chunk(str(file))
+                print(f"✅ Chunked {file} into pretty-printed row chunks")
+            else:
+                chunk_file(
+                    str(file),
+                    method=args.method,
+                    chunk_size=args.chunk_size,
+                    max_sentences=args.max_sentences,
+                    heading_level=args.heading_level,
+                    overlap=args.overlap,
+                    llm_prompt=args.llm_prompt
+                )

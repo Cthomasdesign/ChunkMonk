@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import json
 from pathlib import Path
 from datetime import datetime
@@ -72,8 +74,16 @@ def process_chunk_file(file_path):
         json.dump(metadata, f, indent=2)
     print(f"✅ Metadata saved: {metadata_path}")
 
+def has_metadata(chunk_path):
+    base_name = Path(chunk_path).stem
+    metadata_path = Path(METADATA_DIR) / f"{base_name}.json"
+    return metadata_path.exists()
+
 # === MAIN ===
 if __name__ == "__main__":
     chunk_files = sorted(Path(CHUNKS_DIR).glob("*.txt"))
     for file_path in chunk_files:
+        if has_metadata(file_path):
+            print(f"⏭️ Skipping already processed chunk: {Path(file_path).name}")
+            continue
         process_chunk_file(file_path)
