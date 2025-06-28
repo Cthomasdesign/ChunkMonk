@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - ChunkMunk{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <a href="/" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </a>
+                <h1 class="d-inline-block">
+                    <i class="fas fa-search me-2"></i>Search Results
+                </h1>
+            </div>
+            <div class="text-muted">
+                <i class="fas fa-file-alt me-1"></i>{{ chunks|length }} results
+            </div>
+        </div>
+        {% if query %}
+        <p class="text-muted">Searching for: "<strong>{{ query }}</strong>"</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if chunks %}
+<div class="row">
+    {% for chunk in chunks %}
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card chunk-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0 text-truncate">
+                    <i class="fas fa-file-alt me-1"></i>{{ chunk.id }}
+                </h6>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/chunk/{{ chunk.id }}">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteChunk('{{ chunk.id }}')">
+                            <i class="fas fa-trash me-2"></i>Delete
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-folder me-1"></i>{{ chunk.source_file }}
+                    </small>
+                </div>
+                
+                <div class="content-preview mb-3">
+                    <p class="card-text small">
+                        {% if query %}
+                            {% set highlighted_content = chunk.content|replace(query, '<mark>' + query + '</mark>') %}
+                            {{ highlighted_content|safe }}
+                        {% else %}
+                            {{ chunk.content }}
+                        {% endif %}
+                    </p>
+                </div>
+                
+                {% if chunk.summary %}
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-comment me-1"></i>
+                        {% if query and query in chunk.summary.lower() %}
+                            {% set highlighted_summary = chunk.summary|replace(query, '<mark>' + query + '</mark>') %}
+                            {{ highlighted_summary|safe }}
+                        {% else %}
+                            {{ chunk.summary }}
+                        {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+                
+                {% if chunk.tags %}
+                <div class="mb-2">
+                    {% for tag in chunk.tags %}
+                        {% if query and query in tag.lower() %}
+                            <span class="badge bg-warning text-dark tag-badge">{{ tag|replace(query, '<mark>' + query + '</mark>')|safe }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark tag-badge">{{ tag }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-text-width me-1"></i>{{ chunk.char_count }} chars
+                        {% if chunk.in_pinecone %}
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-database me-1"></i>In Pinecone
+                        </span>
+                        {% else %}
+                        <span class="badge bg-warning ms-2">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Not in Pinecone
+                        </span>
+                        {% endif %}
+                    </small>
+                    <a href="/chunk/{{ chunk.id }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+    <h3 class="text-muted">No results found</h3>
+    <p class="text-muted">
+        {% if query %}
+            No chunks match your search for "<strong>{{ query }}</strong>"
+        {% else %}
+            Try searching for something specific
+        {% endif %}
+    </p>
+    <a href="/" class="btn btn-primary">
+        <i class="fas fa-home me-1"></i>Back to All Chunks
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteChunk(chunkId) {
+    if (confirm('Are you sure you want to delete this chunk? This action cannot be undone.')) {
+        axios.delete(`/api/chunk/${chunkId}`)
+            .then(response => {
+                if (response.data.success) {
+                    location.reload();
+                } else {
+                    alert('Error deleting chunk');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting chunk');
+            });
+    }
+}
+</script>
+{% endblock %} 

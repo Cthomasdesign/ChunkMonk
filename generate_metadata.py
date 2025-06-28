@@ -58,6 +58,7 @@ def process_chunk_file(file_path):
         "chunk_id": base_name,
         "source_file": base_name.rsplit("_chunk_", 1)[0],
         "chunk_index": int(base_name.split("_")[-1]),
+        "text": chunk_text,
         "summary": summary,
         "tags": tags,
         "char_count": len(chunk_text),

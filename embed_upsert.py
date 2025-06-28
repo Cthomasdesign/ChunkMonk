@@ -45,6 +45,14 @@ def process_and_upsert(chunk_path):
 
     with open(metadata_path, "r") as f:
         metadata = json.load(f)
+    
+    # Add additional metadata fields for RAG applications
+    metadata.update({
+        "text": chunk_text,  # Ensure the full text is in metadata for retrieval
+        "embedding_model": EMBEDDING_MODEL,
+        "embedded_at": datetime.utcnow().isoformat()
+    })
+    
     print(f"📦 Loaded metadata: {metadata}")
 
     # Set OpenAI API key
